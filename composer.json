@@ -1,0 +1,17 @@
+{
+    "name": "arifinofficial/sunmedia-ota-rate",
+    "description": "Sun Media OTA Rate Plugin",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Arifin N",
+            "email": "arifinofficial@outlook.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {"Inc\\": "./inc"}
+    }
+}
