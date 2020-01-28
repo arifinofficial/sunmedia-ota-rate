@@ -20,7 +20,7 @@ final class Init
             Base\Enqueue::class,
             Base\CustomPostType::class,
             Base\CustomMetaBox::class,
-            Base\shortcode::class
+            Base\Shortcode::class
         ];
     }
 
