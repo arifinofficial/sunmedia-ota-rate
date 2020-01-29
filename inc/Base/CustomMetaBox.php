@@ -15,18 +15,18 @@ class CustomMetaBox
         add_action('add_meta_boxes', [$this, 'addMetaBox']);
         add_action('save_post', [$this, 'savePriceFields']);
         add_action('save_post', [$this, 'saveFetchData']);
+        add_action('save_post', [$this, 'saveSetProperty']);
     }
 
     public function addMetaBox()
     {
         add_meta_box('cota_meta_box_price_ota', 'OTA Price', [$this, 'cotaPriceCallback'], 'sm_cotarate', 'normal', 'default');
         add_meta_box('cota_meta_box_use_api', 'Fetch Data', [$this, 'cotaFetchData'], 'sm_cotarate', 'normal', 'default');
+        add_meta_box('cota_meta_box_set_rate', 'Set Rate Property', [$this, 'cotaSetRateProperty'], 'sm_cotarate', 'normal', 'default');
     }
 
     public function cotaPriceCallback($post)
     {
-        // var_dump($this->api->callApi());
-        // die;
         foreach ($this->otas as $key => $ota) {
             wp_nonce_field('savePriceFields', "price_field_nonce[$key][$ota]" );
 
@@ -48,6 +48,16 @@ class CustomMetaBox
         echo '<input style="margin-right:30px;" type="text" name="hotel_key" value="'.esc_attr($valKey).'">';
         echo '<label for="fetch_field"><input type="checkbox" value=1 name="fetch_field" '. checked($value, '1', false) .'></label>';
         echo '<span>Fetch Data From API?</span>';
+    }
+
+    public function cotaSetRateProperty($post)
+    {
+        wp_nonce_field('saveSetProperty', "set_property_field_nonce");
+
+        $value = get_post_meta($post->ID, '_cota_set_property_price', true);
+
+        echo '<label style="margin-right:10px;" for="set_property">Set Property Price</label>';
+        echo '<input type="number" name="set_property" id="set_property" value="'.esc_attr($value).'">';
     }
 
     public function savePriceFields($post_id)
@@ -74,13 +84,8 @@ class CustomMetaBox
             sanitize_text_field($_POST['price_field'][$key]);  
             $arr[] = $_POST['price_field'][$key];
         }
-        // echo '<pre>';
-        //     print_r($arr);
-        //     echo '</pre>';
-        //     die;
+       
         update_post_meta($post_id, '_cota_price', $arr);
-
-        // add_action('save_post', [$this, 'savePriceFields']);
     }
 
     public function saveFetchData($post_id)
@@ -106,6 +111,29 @@ class CustomMetaBox
         }
     }
 
+    public function saveSetProperty($post_id)
+    {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!isset($_POST['set_property'])) {
+            return;
+        }
+
+        if (!isset($_POST['set_property_field_nonce'])) {
+            return;
+        }
+
+        if (!wp_verify_nonce($_POST['set_property_field_nonce'], 'saveSetProperty')) {
+            return;
+        }
+
+        $price = sanitize_text_field($_POST['set_property']);  
+        
+        update_post_meta($post_id, '_cota_set_property_price', $price);
+    }
+
     protected function getPrice($post_id)
     {
         $this->api = new HotelApiPrice();
@@ -117,74 +145,94 @@ class CustomMetaBox
         
         $res = $this->api->callApi($key, $in, $out);
 
+        $arr = [];
+
+        $rates = json_decode($res, true)['result']['rates'];
         // echo '<pre>';
-        // print_r(json_decode($res, true)['result']);
+        // print_r($rates);
         // echo '</pre>';
         // die;
 
-        $arr = [];
-        $rates = json_decode($res, true)['result']['rates'];
-        
         $filter = array_filter($rates, [$this, 'filterOta']);
 
         usort($filter, function($item1, $item2){
             return $item1['name'] <=> $item2['name'];
         });
 
-        // $null = [0,0,0];
-        // echo '<pre>';
-        //     print_r($null);
-        //     echo '</pre>';
-        //     die;
 
+        // Checking if data not equal 3
         if (count($filter) != count($this->codeOta)) {
+            if (count($filter) == 0) {
+                for ($i=0; $i < count($this->codeOta) ; $i++) { 
+                    $push['code'] = 'zzz';
+                    $push['name'] = 'zzz';
+                    $push['rate'] = 'zzz';
+                    $push['tax'] = 'zzz';
+                    array_push($filter, $push);
+                }
+            }
 
-            // $push['code'] = 'BookingCom';
-            // $push['name'] = 'Booking.com';
-            // $push['rate'] = 'null';
-            // $push['tax'] = 'null';
-            // array_push($filter, $push);
-            // array_unique($filter);
-            // echo '<pre>';
-            // print_r($filter);
-            // echo '</pre>';
+            if (count($filter) == 1) {
+                for ($i=0; $i < 2 ; $i++) { 
+                    $push['code'] = 'zzz';
+                    $push['name'] = 'zzz';
+                    $push['rate'] = 'zzz';
+                    $push['tax'] = 'zzz';
+                    array_push($filter, $push);
+                }
+            }
 
-            // die;
-            $null = [0,0,0];
+            if (count($filter) == 2) {
+                    $push['code'] = 'zzz';
+                    $push['name'] = 'zzz';
+                    $push['rate'] = 'zzz';
+                    $push['tax'] = 'zzz';
+                    array_push($filter, $push);
+            }
 
-            // echo '<pre>';
-            // print_r($null);
-            // echo '</pre>';
-            // die;
-            update_post_meta($post_id, '_cota_price', $null);
+            $i = 0;
+            foreach ($this->codeOta as $value) {
+                if ($value == $filter[0]['code'] || $value == $filter[1]['code'] || $value == $filter[2]['code']) {
+                    
+                }else{
+                    $push['code'] = $value;
+                    $push['name'] = $this->otas[$i];
+                    $push['rate'] = 0;
+                    $push['tax'] = 0;
+
+                    array_push($filter, $push);
+                    usort($filter, function($a, $b){
+                        return $a['code'] <=> $b['code'];
+                    });
+                    array_pop($filter);
+                }
+
+                $i++;
+            }
+
+            $arr2 = [];
+
+            foreach ($filter as $cost) {
+                $arr2[] = $cost['rate'] + $cost['tax'];
+            }
+            
+            update_post_meta($post_id, '_cota_price', $arr2);
+            return;
+        } else {
+            $countOta = count($this->otas);
+            for ($i=0; $i < $countOta; $i++) { 
+                foreach ($this->codeOta as $name) {
+                    
+                    if ($filter[$i]['code'] == $name) {
+                        $arr[] = $filter[$i]['rate'] + $filter[$i]['tax'];
+                    } 
+                }
+            }
+    
+            update_post_meta($post_id, '_cota_price', $arr);
             return;
         }
         
-        $countOta = count($this->otas);
-        for ($i=0; $i < $countOta; $i++) { 
-            foreach ($this->codeOta as $name) {
-                // print_r($name);
-                // die;
-                if ($filter[$i]['code'] == $name) {
-                    $arr[] = $filter[$i]['rate'] + $filter[$i]['tax'];
-                } 
-                // else {
-                //     $tt = [22];
-                //     print_r($i);
-                //     die;
-                //     array_splice($arr, $i, 0, $tt);
-                // }
-            }
-        }
-
-        // $null = [0,0,0];
-        // echo '<pre>';
-        //     print_r($arr);
-        //     echo '</pre>';
-            // die;
-
-        update_post_meta($post_id, '_cota_price', $arr);
-        return;
     }
 
     public function filterOta($item)

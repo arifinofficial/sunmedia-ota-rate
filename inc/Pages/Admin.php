@@ -14,6 +14,8 @@ class Admin extends BaseController
         $this->customFields = new CustomField();
 
         add_action('admin_menu', [$this, 'add_admin_page']);
+
+        add_action('admin_init', [$this, 'registerSettings']);
     }
 
     public function add_admin_page()
@@ -59,4 +61,33 @@ class Admin extends BaseController
 
     //     $this->
     // }
+
+    public function registerSettings()
+    {
+        register_setting('cota-settings', '_cota_front_single_lower');
+        register_setting('cota-settings', '_cota_advance_price');
+
+        add_settings_section('_cota_label_settings', 'COTA Settings', [$this, 'cotaSettingCallback'], 'cota-settings');
+
+        add_settings_field('_cota_front_single_lower_label_field', 'Set display property from lower price?', [$this, 'cotaSettingFieldCallback'], 'cota-settings', '_cota_label_settings', ['class' => 'cota-label-setting']);
+        add_settings_field('_cota_advance_price_label_field', 'Hide more expensive property?', [$this, 'cotaSettingAdvanceFieldCallback'], 'cota-settings', '_cota_label_settings', ['class' => 'cota-label-setting']);
+    }
+
+    public function cotaSettingCallback()
+    {
+        echo '<span>System Settings</span>';
+    }
+
+    public function cotaSettingFieldCallback()
+    {
+        $checked = get_option('_cota_front_single_lower');
+        echo '<input type="checkbox" name="_cota_front_single_lower" value="1" '. checked($checked, '1', false) .' >';
+        // echo '<input type="text" name="_cota_front_single_lower" value="testing">';
+    }
+
+    public function cotaSettingAdvanceFieldCallback()
+    {
+        $checked = get_option('_cota_advance_price');
+        echo '<input type="checkbox" name="_cota_advance_price" value="1" '. checked($checked, '1', false) .'>';
+    }
 }
