@@ -21,7 +21,7 @@ final class Init
             Base\CustomPostType::class,
             Base\CustomMetaBox::class,
             Base\Shortcode::class,
-            Base\Cron::class
+            Base\Cron::class,
         ];
     }
 
