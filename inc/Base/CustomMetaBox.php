@@ -3,12 +3,13 @@
 namespace Inc\Base;
 
 use Inc\Api\HotelApi\HotelApiPrice;
+use Inc\Base\Notify;
 
-class CustomMetaBox
+class CustomMetaBox extends BaseController
 {
-    protected $otas = ['Agoda', 'Booking.com', 'Hotels.com'];
     protected $codeOta = ['Agoda', 'BookingCom', 'HotelsCom2'];
     public $api;
+    public $notify;
 
     public function register()
     {
@@ -134,7 +135,7 @@ class CustomMetaBox
         update_post_meta($post_id, '_cota_set_property_price', $price);
     }
 
-    protected function getPrice($post_id)
+    public function getPrice($post_id)
     {
         $this->api = new HotelApiPrice();
         $in = date('Y-m-d');
@@ -148,17 +149,12 @@ class CustomMetaBox
         $arr = [];
 
         $rates = json_decode($res, true)['result']['rates'];
-        // echo '<pre>';
-        // print_r($rates);
-        // echo '</pre>';
-        // die;
 
         $filter = array_filter($rates, [$this, 'filterOta']);
 
         usort($filter, function($item1, $item2){
             return $item1['name'] <=> $item2['name'];
         });
-
 
         // Checking if data not equal 3
         if (count($filter) != count($this->codeOta)) {
@@ -211,19 +207,29 @@ class CustomMetaBox
             }
 
             $arr2 = [];
-
             foreach ($filter as $cost) {
                 $arr2[] = $cost['rate'] + $cost['tax'];
             }
-            
+
+            // notify if property price higher than ota price
+            $this->notify = new Notify();
+            $this->notify->mail($this->to, $this->subject, $this->body);
+
             update_post_meta($post_id, '_cota_price', $arr2);
             return;
         } else {
+            $priceProperty = get_post_meta($post_id, '_cota_set_property_price', true);
             $countOta = count($this->otas);
             for ($i=0; $i < $countOta; $i++) { 
+                
                 foreach ($this->codeOta as $name) {
                     
                     if ($filter[$i]['code'] == $name) {
+                        // notify if property price higher than ota price
+                        if ($priceProperty > $filter[$i]['rate'] + $filter[$i]['tax']) {
+                            $this->notify = new Notify();
+                            $this->notify->mail($this->to, $this->subject, $this->body);
+                        }
                         $arr[] = $filter[$i]['rate'] + $filter[$i]['tax'];
                     } 
                 }
