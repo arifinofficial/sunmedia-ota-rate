@@ -3,13 +3,20 @@
 namespace Inc\Base;
 
 use Inc\Api\HotelApi\HotelApiPrice;
+use Inc\Base\Notify;
+use Inc\Api\Currency\Currency;
 
 class Cron extends BaseController
 {
     protected $codeOta = ['Agoda', 'BookingCom', 'HotelsCom2'];
+    public $usdToIdr;
 
     public function register()
     {
+        // set currency
+        $currency = new Currency();
+        $this->usdToIdr = $currency->getCurrency();
+
         $getStatus = get_option('_cota_cron_price');
 
         if ($getStatus == '1') {
@@ -103,7 +110,7 @@ class Cron extends BaseController
 
             $arr2 = [];
             foreach ($filter as $cost) {
-                $arr2[] = $cost['rate'] + $cost['tax'];
+                $arr2[] = ($cost['rate'] + $cost['tax']) * $this->usdToIdr;
             }
 
             // notify if property price higher than ota price
@@ -131,7 +138,7 @@ class Cron extends BaseController
                             $this->notify = new Notify();
                             $this->notify->mail($this->to, $this->subject, $this->body);
                         }
-                        $arr[] = $filter[$i]['rate'] + $filter[$i]['tax'];
+                        $arr[] = ($filter[$i]['rate'] + $filter[$i]['tax']) * $this->usdToIdr;
                     } 
                 }
             }

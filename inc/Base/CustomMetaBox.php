@@ -4,12 +4,14 @@ namespace Inc\Base;
 
 use Inc\Api\HotelApi\HotelApiPrice;
 use Inc\Base\Notify;
+use Inc\Api\Currency\Currency;
 
 class CustomMetaBox extends BaseController
 {
     protected $codeOta = ['Agoda', 'BookingCom', 'HotelsCom2'];
     public $api;
     public $notify;
+    public $usdToIdr;
 
     public function register()
     {
@@ -17,6 +19,10 @@ class CustomMetaBox extends BaseController
         add_action('save_post', [$this, 'savePriceFields']);
         add_action('save_post', [$this, 'saveFetchData']);
         add_action('save_post', [$this, 'saveSetProperty']);
+
+        // set currency
+        $currency = new Currency();
+        $this->usdToIdr = $currency->getCurrency();
     }
 
     public function addMetaBox()
@@ -208,7 +214,7 @@ class CustomMetaBox extends BaseController
 
             $arr2 = [];
             foreach ($filter as $cost) {
-                $arr2[] = $cost['rate'] + $cost['tax'];
+                $arr2[] = ($cost['rate'] + $cost['tax']) * $this->usdToIdr;
             }
 
             // notify if property price higher than ota price
@@ -230,7 +236,8 @@ class CustomMetaBox extends BaseController
                             $this->notify = new Notify();
                             $this->notify->mail($this->to, $this->subject, $this->body);
                         }
-                        $arr[] = $filter[$i]['rate'] + $filter[$i]['tax'];
+                        
+                        $arr[] = ($filter[$i]['rate'] + $filter[$i]['tax']) * $this->usdToIdr;
                     } 
                 }
             }
