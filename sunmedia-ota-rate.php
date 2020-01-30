@@ -8,12 +8,6 @@ Version: 0.1 Beta
 */
 
 defined('ABSPATH') or die('Error!');
-function your_function_name() {
-    wp_mail('arifin.sunmedia@gmail.com', 'test', 'testing', $headers[] );    
-}
-add_action( 'wp_loaded', 'your_function_name', 12 );
- 
-// wp_mail( 'arifinofficial@outlook.com', 'halo', 'testing');
 if (file_exists(dirname(__FILE__).'/vendor/autoload.php')) {
     require_once dirname(__FILE__).'/vendor/autoload.php';
 }
