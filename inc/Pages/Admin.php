@@ -35,7 +35,7 @@ class Admin extends BaseController
             'Rates',
             'manage_options',
             'edit.php?post_type=sm_cotarate',
-            NULL
+            null
         );
     }
 
@@ -49,28 +49,17 @@ class Admin extends BaseController
         return $input;
     }
 
-    // public function setCustomFields()
-    // {
-    //     $args = [
-    //         [
-    //             'option_group' => 'cota_options_group',
-    //             'option_name' => '_cota',
-    //             'callback' => 'adminCallback'
-    //         ]
-    //     ];
-
-    //     $this->
-    // }
-
     public function registerSettings()
     {
         register_setting('cota-settings', '_cota_front_single_lower');
         register_setting('cota-settings', '_cota_advance_price');
+        register_setting('cota-settings', '_cota_cron_price');
 
         add_settings_section('_cota_label_settings', 'COTA Settings', [$this, 'cotaSettingCallback'], 'cota-settings');
 
         add_settings_field('_cota_front_single_lower_label_field', 'Set display property from lower price?', [$this, 'cotaSettingFieldCallback'], 'cota-settings', '_cota_label_settings', ['class' => 'cota-label-setting']);
         add_settings_field('_cota_advance_price_label_field', 'Hide more expensive property?', [$this, 'cotaSettingAdvanceFieldCallback'], 'cota-settings', '_cota_label_settings', ['class' => 'cota-label-setting']);
+        add_settings_field('_cota_cron_price_label_field', 'Automatically daily update price from API?', [$this, 'cotaSettingCronFieldCallback'], 'cota-settings', '_cota_label_settings', ['class' => 'cota-label-setting']);
     }
 
     public function cotaSettingCallback()
@@ -89,5 +78,11 @@ class Admin extends BaseController
     {
         $checked = get_option('_cota_advance_price');
         echo '<input type="checkbox" name="_cota_advance_price" value="1" '. checked($checked, '1', false) .'>';
+    }
+
+    public function cotaSettingCronFieldCallback()
+    {
+        $checked = get_option('_cota_cron_price');
+        echo '<input type="checkbox" name="_cota_cron_price" value="1" '. checked($checked, '1', false) .'>';
     }
 }
