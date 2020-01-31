@@ -13,10 +13,6 @@ class Cron extends BaseController
 
     public function register()
     {
-        // set currency
-        $currency = new Currency();
-        $this->usdToIdr = $currency->getCurrency();
-
         $getStatus = get_option('_cota_cron_price');
 
         if ($getStatus == '1') {
@@ -34,6 +30,10 @@ class Cron extends BaseController
 
     public function updateEventPrice()
     {
+        // set currency
+        $currency = new Currency();
+        $this->usdToIdr = $currency->getCurrency();
+        
         $args = ['post_type' => 'sm_cotarate'];
 
         $api = new HotelApiPrice();
