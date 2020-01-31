@@ -86,6 +86,7 @@ class Shortcode extends BaseController
         $nameProperty = get_the_title($id);
         $prices = get_post_meta($id, '_cota_price', true);
         $priceProperty = get_post_meta($id, '_cota_set_property_price', true);
+        $position = get_post_meta($id, '_cota_position_property', true);
 
         // checking price must be != 0
         if (array_sum($prices) != 0) {
@@ -93,6 +94,7 @@ class Shortcode extends BaseController
                 // $rates = [];
                     $arr[$i]['property']['name'] = $nameProperty;
                     $arr[$i]['property']['rate'] = $priceProperty;
+                    $arr[$i]['property']['position'] = $position;
                 foreach ($this->otas as $key => $value) {
                     $arr[$i]['ota-rates'][$value] = $prices[$key];
                 }
@@ -110,8 +112,15 @@ class Shortcode extends BaseController
                 }
                 $arrTotal[] = $arr[$key];
             }
+            usort($arrTotal, function($val1, $val2){
+                return $val1['property']['position'] <=> $val2['property']['position'];
+            });
+            
             return json_encode($arrTotal);
         } else {
+            usort($arr, function($val1, $val2){
+                return $val1['property']['position'] <=> $val2['property']['position'];
+            });
             return json_encode($arr);
         }
     }
