@@ -13,7 +13,6 @@ class CustomPostType
     {
         $supports = array(
             'title',
-            'thumbnail',
             'post-formats',
         );
     
