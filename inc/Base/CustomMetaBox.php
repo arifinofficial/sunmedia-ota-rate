@@ -19,10 +19,7 @@ class CustomMetaBox extends BaseController
         add_action('save_post', [$this, 'savePriceFields']);
         add_action('save_post', [$this, 'saveFetchData']);
         add_action('save_post', [$this, 'saveSetProperty']);
-
-        // set currency
-        $currency = new Currency();
-        $this->usdToIdr = $currency->getCurrency();
+        add_action('save_post', [$this, 'savePositionProperty']);
     }
 
     public function addMetaBox()
@@ -30,14 +27,15 @@ class CustomMetaBox extends BaseController
         add_meta_box('cota_meta_box_price_ota', 'OTA Price', [$this, 'cotaPriceCallback'], 'sm_cotarate', 'normal', 'default');
         add_meta_box('cota_meta_box_use_api', 'Fetch Data', [$this, 'cotaFetchData'], 'sm_cotarate', 'normal', 'default');
         add_meta_box('cota_meta_box_set_rate', 'Set Rate Property', [$this, 'cotaSetRateProperty'], 'sm_cotarate', 'normal', 'default');
+        add_meta_box('cota_meta_box_position', 'Position Property', [$this, 'cotaSetPositionProperty'], 'sm_cotarate', 'side', 'default');
     }
 
     public function cotaPriceCallback($post)
     {
         foreach ($this->otas as $key => $ota) {
-            wp_nonce_field('savePriceFields', "price_field_nonce[$key][$ota]" );
+            wp_nonce_field('savePriceFields', "price_field_nonce[$key][$ota]");
 
-            $value = get_post_meta( $post->ID, '_cota_price', true);
+            $value = get_post_meta($post->ID, '_cota_price', true);
 
             echo '<label style="margin-right:10px;" for="'.strtolower($ota).'_price">'. $ota .' Price</label>';
             echo '<input style="margin-right:30px;" id="'.strtolower($ota).'_price" type="number" name="price_field[]" value="'. ($value != '' ? esc_attr($value[$key]) : '') .'">';
@@ -67,6 +65,16 @@ class CustomMetaBox extends BaseController
         echo '<input type="number" name="set_property" id="set_property" value="'.esc_attr($value).'">';
     }
 
+    public function cotaSetPositionProperty($post)
+    {
+        wp_nonce_field('savePosition', "set_position_field_nonce");
+
+        $value = get_post_meta($post->ID, '_cota_position_property', true);
+
+        echo '<label for="set_position">Set Position Property</label>';
+        echo '<input type="number" style="width:100%" name="set_position" id="set_position" value="'.esc_attr($value).'">';
+    }
+
     public function savePriceFields($post_id)
     {
         $arr = [];
@@ -88,7 +96,7 @@ class CustomMetaBox extends BaseController
                 return;
             }
 
-            sanitize_text_field($_POST['price_field'][$key]);  
+            sanitize_text_field($_POST['price_field'][$key]);
             $arr[] = $_POST['price_field'][$key];
         }
        
@@ -105,7 +113,7 @@ class CustomMetaBox extends BaseController
             return;
         }
         
-        $hotelKey = sanitize_text_field($_POST['hotel_key']);  
+        $hotelKey = sanitize_text_field($_POST['hotel_key']);
         update_post_meta($post_id, '_cota_fetch_hotel_key', $hotelKey);
 
         if (isset($_POST['fetch_field'])) {
@@ -113,7 +121,7 @@ class CustomMetaBox extends BaseController
                 $this->getPrice($post_id);
             }
             update_post_meta($post_id, '_cota_fetch', $_POST['fetch_field']);
-        }else{
+        } else {
             delete_post_meta($post_id, '_cota_fetch');
         }
     }
@@ -136,13 +144,35 @@ class CustomMetaBox extends BaseController
             return;
         }
 
-        $price = sanitize_text_field($_POST['set_property']);  
+        $price = sanitize_text_field($_POST['set_property']);
         
         update_post_meta($post_id, '_cota_set_property_price', $price);
     }
 
+    public function savePositionProperty($post_id)
+    {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!isset($_POST['set_position'])) {
+            return;
+        }
+
+        if (!isset($_POST['set_position_field_nonce'])) {
+            return;
+        }
+
+        $position = sanitize_text_field($_POST['set_position']);
+        
+        update_post_meta($post_id, '_cota_position_property', $position);
+    }
+
     public function getPrice($post_id)
     {
+        // set currency
+        $currency = new Currency();
+        $this->usdToIdr = $currency->getCurrency();
         $this->api = new HotelApiPrice();
         $in = date('Y-m-d');
         $tomorrow = strtotime('+1 day');
@@ -158,14 +188,14 @@ class CustomMetaBox extends BaseController
 
         $filter = array_filter($rates, [$this, 'filterOta']);
 
-        usort($filter, function($item1, $item2){
+        usort($filter, function ($item1, $item2) {
             return $item1['name'] <=> $item2['name'];
         });
 
         // Checking if data not equal 3
         if (count($filter) != count($this->codeOta)) {
             if (count($filter) == 0) {
-                for ($i=0; $i < count($this->codeOta) ; $i++) { 
+                for ($i=0; $i < count($this->codeOta) ; $i++) {
                     $push['code'] = 'zzz';
                     $push['name'] = 'zzz';
                     $push['rate'] = 'zzz';
@@ -175,7 +205,7 @@ class CustomMetaBox extends BaseController
             }
 
             if (count($filter) == 1) {
-                for ($i=0; $i < 2 ; $i++) { 
+                for ($i=0; $i < 2 ; $i++) {
                     $push['code'] = 'zzz';
                     $push['name'] = 'zzz';
                     $push['rate'] = 'zzz';
@@ -185,25 +215,24 @@ class CustomMetaBox extends BaseController
             }
 
             if (count($filter) == 2) {
-                    $push['code'] = 'zzz';
-                    $push['name'] = 'zzz';
-                    $push['rate'] = 'zzz';
-                    $push['tax'] = 'zzz';
-                    array_push($filter, $push);
+                $push['code'] = 'zzz';
+                $push['name'] = 'zzz';
+                $push['rate'] = 'zzz';
+                $push['tax'] = 'zzz';
+                array_push($filter, $push);
             }
 
             $i = 0;
             foreach ($this->codeOta as $value) {
                 if ($value == $filter[0]['code'] || $value == $filter[1]['code'] || $value == $filter[2]['code']) {
-                    
-                }else{
+                } else {
                     $push['code'] = $value;
                     $push['name'] = $this->otas[$i];
                     $push['rate'] = 0;
                     $push['tax'] = 0;
 
                     array_push($filter, $push);
-                    usort($filter, function($a, $b){
+                    usort($filter, function ($a, $b) {
                         return $a['code'] <=> $b['code'];
                     });
                     array_pop($filter);
@@ -226,10 +255,8 @@ class CustomMetaBox extends BaseController
         } else {
             $priceProperty = get_post_meta($post_id, '_cota_set_property_price', true);
             $countOta = count($this->otas);
-            for ($i=0; $i < $countOta; $i++) { 
-                
+            for ($i=0; $i < $countOta; $i++) {
                 foreach ($this->codeOta as $name) {
-                    
                     if ($filter[$i]['code'] == $name) {
                         // notify if property price higher than ota price
                         if ($priceProperty > $filter[$i]['rate'] + $filter[$i]['tax']) {
@@ -238,14 +265,13 @@ class CustomMetaBox extends BaseController
                         }
                         
                         $arr[] = ($filter[$i]['rate'] + $filter[$i]['tax']) * $this->usdToIdr;
-                    } 
+                    }
                 }
             }
     
             update_post_meta($post_id, '_cota_price', $arr);
             return;
         }
-        
     }
 
     public function filterOta($item)
