@@ -87,6 +87,7 @@ class Shortcode extends BaseController
         $prices = get_post_meta($id, '_cota_price', true);
         $priceProperty = get_post_meta($id, '_cota_set_property_price', true);
         $position = get_post_meta($id, '_cota_position_property', true);
+        $id_booking_engine = get_post_meta($id, '_cota_id_booking_engine', true);
 
         // checking price must be != 0
         if (array_sum($prices) != 0) {
@@ -95,6 +96,7 @@ class Shortcode extends BaseController
                     $arr[$i]['property']['name'] = $nameProperty;
                     $arr[$i]['property']['rate'] = $priceProperty;
                     $arr[$i]['property']['position'] = $position;
+                    $arr[$i]['property']['id_booking_engine'] = $id_booking_engine;
                 foreach ($this->otas as $key => $value) {
                     $arr[$i]['ota-rates'][$value] = $prices[$key];
                 }
