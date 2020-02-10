@@ -20,6 +20,7 @@ class CustomMetaBox extends BaseController
         add_action('save_post', [$this, 'saveFetchData']);
         add_action('save_post', [$this, 'saveSetProperty']);
         add_action('save_post', [$this, 'savePositionProperty']);
+        add_action('save_post', [$this, 'saveIdBookingEngine']);
     }
 
     public function addMetaBox()
@@ -28,6 +29,7 @@ class CustomMetaBox extends BaseController
         add_meta_box('cota_meta_box_use_api', 'Fetch Data', [$this, 'cotaFetchData'], 'sm_cotarate', 'normal', 'default');
         add_meta_box('cota_meta_box_set_rate', 'Set Rate Property', [$this, 'cotaSetRateProperty'], 'sm_cotarate', 'normal', 'default');
         add_meta_box('cota_meta_box_position', 'Position Property', [$this, 'cotaSetPositionProperty'], 'sm_cotarate', 'side', 'default');
+        add_meta_box('cota_meta_id_booking_engine', 'ID Booking Engine', [$this, 'cotaSetIdBookingEngine'], 'sm_cotarate', 'side', 'default');
     }
 
     public function cotaPriceCallback($post)
@@ -73,6 +75,16 @@ class CustomMetaBox extends BaseController
 
         echo '<label for="set_position">Set Position Property</label>';
         echo '<input type="number" style="width:100%" name="set_position" id="set_position" value="'.esc_attr($value).'">';
+    }
+
+    public function cotaSetIdBookingEngine($post)
+    {
+        wp_nonce_field('saveIdBookingEngine', "set_id_booking_engine_field_nonce");
+
+        $value = get_post_meta($post->ID, '_cota_id_booking_engine', true);
+
+        echo '<label for="set_id_booking_engine">Set ID Booking Engine</label>';
+        echo '<input type="number" style="width:100%" name="set_id_booking_engine" id="set_id_booking_engine" value="'.esc_attr($value).'">';
     }
 
     public function savePriceFields($post_id)
@@ -166,6 +178,25 @@ class CustomMetaBox extends BaseController
         $position = sanitize_text_field($_POST['set_position']);
         
         update_post_meta($post_id, '_cota_position_property', $position);
+    }
+
+    public function saveIdBookingEngine($post_id)
+    {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!isset($_POST['set_id_booking_engine'])) {
+            return;
+        }
+
+        if (!isset($_POST['set_id_booking_engine_field_nonce'])) {
+            return;
+        }
+
+        $id_booking_engine = sanitize_text_field($_POST['set_id_booking_engine']);
+        
+        update_post_meta($post_id, '_cota_id_booking_engine', $id_booking_engine);
     }
 
     public function getPrice($post_id)
